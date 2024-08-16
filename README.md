@@ -1,4 +1,4 @@
-# FinRL_Contest_2024
+# FinRL Contest 2024
 
 ## Outline
   - [Tutorial](#tutorial)
