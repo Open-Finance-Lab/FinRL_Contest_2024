@@ -1,5 +1,5 @@
 # Data-centric Stock Trading Task
-This template includes all the essential source files for the Stock Trading task in the FinRL Contest 2023. Below, you'll find detailed descriptions of each component.
+This template includes all the essential source files for the Stock Trading task in the [FinRL Contest 2023](https://open-finance-lab.github.io/finrl-contest.github.io/). Below, you'll find detailed descriptions of each component.
 
 ## Instruction
 To install the necessary dependencies, please ensure you are using Python 3.10 as your interpreter.
