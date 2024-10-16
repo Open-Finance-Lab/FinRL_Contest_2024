@@ -31,7 +31,7 @@ STOCK_TICKERS_HIGHEST_CAP_US = [
 
 """load data and make dset - first we load in the ticker data for each ticker, then we enrich that with news data"""
 # stock_data = get_stock_data(STOCK_TICKERS_HIGHEST_CAP_US, START_DATE, END_DATE)
-stock_data = pd.read_csv("competition_stocks.csv")
+stock_data = pd.read_csv("task2_stocks.csv")
 
 """load model and env"""
 from task2_env import Task2Env
