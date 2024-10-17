@@ -38,7 +38,8 @@ Please provide a readme that describes your submission and explains important th
 ├── finrl-contest-task-2 
 │ ├── trained_models # Your fine-tuned LLM weights.
 │ ├── task2_signal.py # File for your signal 
-│ ├── task2_test.py # File to load your model, tokenizer, and prompt for evaluation. We will provide an example file soon. 
+│ ├── task2_test.py # File to load your model, tokenizer, and prompt for evaluation. We will provide an example file soon.
+│ ├── task2_env.py # File for environment, this should include your reward function. 
 │ ├── readme.md # File to explain the your code
 │ ├── requirements.txt # Have it if adding any new packages
 │ ├── And any additional scripts you create

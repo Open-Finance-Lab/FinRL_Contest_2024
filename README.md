@@ -28,7 +28,7 @@ Will be released soon
 
 ## Task 2 Starter Kit
 
-Will be released soon
+Please see [Task_2_starter_kit](https://github.com/Open-Finance-Lab/FinRL_Contest_2024/tree/main/Task_2_starter_kit) folder.
 
 
 ## Report Submission Requirement
