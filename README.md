@@ -24,7 +24,8 @@ This repository contains the starter kit and tutorials for the ACM ICAIF 2024 Fi
 
 ## Task 1 Starter Kit
 
-Will be released soon
+Please see [Task_1_starter_kit](https://github.com/Open-Finance-Lab/FinRL_Contest_2024/tree/main/Task_1_starter_kit) folder.
+
 
 
 ## Task 2 Starter Kit
