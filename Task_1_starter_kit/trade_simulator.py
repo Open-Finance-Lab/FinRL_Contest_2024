@@ -2,7 +2,7 @@ import sys
 import torch as th
 import numpy as np
 import pandas as pd
-from Task_1_starter_kit.data_config import ConfigData
+from data_config import ConfigData
 
 
 class TradeSimulator:
