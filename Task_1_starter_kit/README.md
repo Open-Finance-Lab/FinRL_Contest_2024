@@ -3,7 +3,7 @@ This task aims to develop robust and effective trading agents for cryptocurrenci
 
 The code in this repo contains a comprehensive starter kit to get started with training single agents in massively parallel environments.
 
-There is an example of ensemble method to use the majority voting approach in the tutorial. Later, we will provide submission format and example, which will use this tutorial.
+There is an example of ensemble method to use the majority voting approach in the tutorial, [Task 1 Crypto Trading Ensemble](https://github.com/Open-Finance-Lab/FinRL_Contest_2024/tree/main/Tutorials/Task_1_tutorial). Later, we will provide submission format and example, which will use this tutorial.
 
 ## Dataset
 A dataset containing second-level Limit Order Book (LOB) data for Bitcoin is provided. Please download [here](https://drive.google.com/drive/folders/1Okd8fyB7n93N1Z5HEnlpb-q8x5FfSF1Z?usp=sharing). All of the datasets required to train DRL agents are in the data directory, please download this into the Task_1 starter dir 
