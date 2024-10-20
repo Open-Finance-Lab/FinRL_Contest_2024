@@ -37,8 +37,8 @@ class TradeSimulator:
         data_df = pd.read_csv(args.csv_path)  # CSV READ HERE
 
         self.price_ary = data_df[["bids_distance_3", "asks_distance_3", "midpoint"]].values
-        self.price_ary[:, 0] = self.price_ary[:, 2] + (1 + self.price_ary[:, 0])
-        self.price_ary[:, 1] = self.price_ary[:, 2] + (1 + self.price_ary[:, 1])
+        self.price_ary[:, 0] = self.price_ary[:, 2] * (1 + self.price_ary[:, 0])
+        self.price_ary[:, 1] = self.price_ary[:, 2] * (1 + self.price_ary[:, 1])
 
         """Align with the rear of the dataset instead"""
         # self.price_ary = self.price_ary[: self.factor_ary.shape[0], :]
