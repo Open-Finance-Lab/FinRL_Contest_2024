@@ -41,7 +41,17 @@ The starter kit includes:
 
 We will provide the evaluation code soon. 
 
+**Notes:**
+The basic requirement is that your model should be able to interact with the environment. The code for training agent and ensemble is just an example solution for your reference. 
+1. You are free to apply any method for ensemble learning. (For example, You can add new agents, use different ensemble algorithms, adjust hyperparameters, etc) The code provided is just to help get started and we encourage innovation.
+2. You are not required to stick to the 8 features we provide. But for evaluation purpose, please make sure that your new technical factors, if any, can be calculated based on the unseen data. Please include this code and state clearly in readme.
+3. We will use the provided environment to evaluate. So it is not encouraged to change the existing parameters in the environment. However, you can fully utilize the environment settings and the massively parallel simulation.
+4. To encourage innovation, if you want to add new mechanisms or use the unused settings (e.g. short sell) in the environment, please also submit your environment, ensure it works with your agent for evaluation, and describe the new changes in the readme.
+
+
 ## Evaluation and Submission guidelines
+The initial cash is $1 million.
+
 Please submit all your models and the scripts to load and test the models.
 
 Please provide a readme that describes your submission and explains important things to note when running it so that we can ensure we run your submission as it was intended.
