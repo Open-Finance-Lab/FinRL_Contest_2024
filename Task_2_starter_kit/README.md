@@ -38,7 +38,7 @@ parameters you may set freely:
 - signals: we provide a sample signal generation function. As with the training, you are free to provide your own signal generation function
 - `train steps`: you may change the number of training steps that your model does. We set this to 50 in the demo kit, but we recommend setting it to at least the length of your training data.
 
-## Evaluation Tempalte
+## Evaluation Template
 You may use this template to evaluate your models in a framework aligned to how we will be evaluating your submissions. We provide some hyperparameters and configuration settings to demonstrate how to use the template. The template uses a config class to localize configurations for your convenience. You may create a validation set from the training data and use that with the evaluation class to test your model on out of sample data. 
 
 Your model will generate a signal for each ticker each timestep which will be used in the evaluation strategy to open simualted positions. The demo code tracks returns, cumulative returns and win/loss rate, which are important metrics that allow us to compute many other metrics from them. You may use additional metrics in your own evaluation to better understand how your models are performing. 
