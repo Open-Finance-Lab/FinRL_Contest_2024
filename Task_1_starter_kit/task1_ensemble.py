@@ -56,16 +56,10 @@ class Ensemble:
         self.save_path = save_path
         self.starting_cash = starting_cash
         self.current_btc = 0
-        self.position = [
-            0,
-        ]
-        self.btc_assets = [
-            0,
-        ]
+        self.position = [0]
+        self.btc_assets = [0]
         self.net_assets = [starting_cash]
-        self.cash = [
-            starting_cash,
-        ]
+        self.cash = [starting_cash]
         self.agent_classes = agent_classes
 
         self.from_env_step_is = None
@@ -91,167 +85,28 @@ class Ensemble:
 
         self.firstbpi = True
 
+    def save_ensemble(self):
+        """Saves the ensemble of agents to a directory."""
+        ensemble_dir = os.path.join(self.save_path, "ensemble_models")
+        os.makedirs(ensemble_dir, exist_ok=True)
+        for idx, agent in enumerate(self.agents):
+            agent_name = self.agent_classes[idx].__name__
+            agent_dir = os.path.join(ensemble_dir, agent_name)
+            os.makedirs(agent_dir, exist_ok=True)
+            agent.save_or_load_agent(agent_dir, if_save=True)
+        print(f"Ensemble models saved in directory: {ensemble_dir}")
+
     def ensemble_train(self):
         args = self.args
 
         for agent_class in self.agent_classes:
-            # Set training instance args
+
             args.agent_class = agent_class
 
-            # TODO read stats out of the env and use for complex ensemble
             agent = self.train_agent(args=args)
             self.agents.append(agent)
 
-        # print("Strating multi trade...")
-        # self.multi_trade()
-
-    def multi_trade(self):
-        """in erl_run 440, action vector is passed on. Can catch there and make ensemble method"""
-
-        agents = self.agents
-        args = self.args
-
-        eval_env_class = args.eval_env_class
-        eval_env_class.num_envs = 1
-
-        eval_env_args = args.eval_env_args
-        eval_env_args["num_envs"] = 1
-        eval_env_args["num_sims"] = 1
-
-        trade_env = build_env(eval_env_class, eval_env_args, gpu_id=args.gpu_id)
-
-        trade_env.step_is[0] = max(self.from_env_step_is)
-        print(trade_env.step)
-
-        states = torch.zeros((trade_env.max_step, self.num_envs, self.state_dim), dtype=torch.float32).to(self.device)
-        multi_actions = torch.zeros((trade_env.max_step, self.num_envs, 1), dtype=torch.int32).to(
-            self.device
-        )  # different
-        rewards = torch.zeros((trade_env.max_step, self.num_envs), dtype=torch.float32).to(self.device)
-        dones = torch.zeros((trade_env.max_step, self.num_envs), dtype=torch.bool).to(self.device)
-
-        returns = []
-        action_ints = []
-        positions = []
-
-        last_state = trade_env.reset()
-
-        position_ary = []
-        trade_ary = []
-        q_values_ary = []
-
-        correct_pred = []
-        current_btcs = [self.current_btc]
-        last_price = 0
-
-        for i in range(trade_env.max_step):
-            thresh = 0.001
-
-            actions = []  # reset step wise actions at each step
-            intermediate_state = last_state
-
-            # collect actions
-            for ai, agent in enumerate(agents):
-                actor = agent.act
-
-                tensor_state = torch.as_tensor(intermediate_state, dtype=torch.float32, device=agent.device)
-                tensor_q_values = actor(tensor_state)
-                tensor_action = tensor_q_values.argmax(dim=1)
-
-                mask_zero_position = trade_env.position.eq(0)
-                mask_q_values = (tensor_q_values.max(dim=1)[0] - tensor_q_values.mean(dim=1)).lt(
-                    torch.where(tensor_action.eq(2), thresh, thresh)
-                )
-                mask = torch.logical_and(mask_zero_position, mask_q_values)
-                tensor_action[mask] = 1
-
-                action = tensor_action.detach().cpu().unsqueeze(1)
-                actions.append(action)
-
-            action = self._majority_vote(actions=actions)
-
-            # action = action.squeeze(1).to(self.device)
-            action_int = action.item() - 1
-
-            state, reward, done, info_dict = trade_env.step(action=action)
-
-            action_ints.append(action_int)
-            multi_actions[i] = action
-            states[i] = state
-            rewards[i] = reward
-            dones[i] = done
-            positions.append(trade_env.position)
-
-            trade_ary.append(trade_env.action_int.data.cpu().numpy())
-            position_ary.append(trade_env.position.data.cpu().numpy())
-            q_values_ary.append(tensor_q_values.data.cpu().numpy())
-            returns.append(reward.item())
-
-            # manually compute cum returns
-            mid_price = trade_env.price_ary[trade_env.step_i, 2].to(self.device)
-
-            new_cash = self.cash[-1]
-
-            if action_int > 0 and self.cash[-1] > mid_price:  # can buy
-                last_cash = self.cash[-1]
-                new_cash = last_cash - mid_price
-                self.current_btc += 1
-            elif action_int < 0 and self.current_btc > 0:  # can sell
-                last_cash = self.cash[-1]
-                new_cash = last_cash + mid_price
-                self.current_btc -= 1
-
-            self.cash.append(new_cash)
-            self.btc_assets.append((self.current_btc * mid_price).item())
-            self.net_assets.append((self.btc_assets[-1] + new_cash))
-
-            last_state = state
-
-            # log win rate
-
-            if action_int == 1:
-                if last_price < mid_price:
-                    correct_pred.append(1)
-                elif last_price > mid_price:
-                    correct_pred.append(-1)
-                else:
-                    correct_pred.append(0)
-            elif action_int == -1:
-                if last_price < mid_price:
-                    correct_pred.append(-1)
-                elif last_price > mid_price:
-                    correct_pred.append(1)
-                else:
-                    correct_pred.append(0)
-            else:
-                correct_pred.append(0)
-
-            last_price = mid_price
-            current_btcs.append(self.current_btc)
-
-        # position_ary = np.stack(position_ary, axis=0)
-        np.save(f"{self.save_path}_position_ary.npy", position_ary)
-        np.save(f"{self.save_path}_net_assets.npy", np.array(self.net_assets))
-        np.save(f"{self.save_path}_btc_pos.npy", np.array(self.btc_assets))
-        np.save(f"{self.save_path}_correct_preds.npy", np.array(correct_pred))
-
-        # compute metrics
-        returns = []
-
-        # Compute the returns
-        for t in range(len(self.net_assets) - 1):
-            r_t = self.net_assets[t]
-            r_t_plus_1 = self.net_assets[t + 1]
-            return_t = (r_t_plus_1 - r_t) / r_t
-            returns.append(return_t)
-
-        returns = np.array(returns)
-
-        final_sharpe_ratio = sharpe_ratio(returns)
-        final_max_drawdown = max_drawdown(returns)
-        final_roma = return_over_max_drawdown(returns)
-
-        # print(action_ints)
+        self.save_ensemble()
 
     def _majority_vote(self, actions):
         """handles tie breaks by returning first element of the most common ones"""
@@ -327,11 +182,6 @@ class Ensemble:
 
         import torch as th
 
-        """
-        Train window logic. Handle date range management outside 
-        of the training loop, and just take care of the exact steps in here
-        """
-
         if_train = True
         while if_train:
             buffer_items = agent.explore_env(env, horizon_len)
@@ -373,7 +223,6 @@ class Ensemble:
         agent.save_or_load_agent(cwd, if_save=True)
         if if_save_buffer and hasattr(buffer, "save_or_load_history"):
             buffer.save_or_load_history(cwd, if_save=True)
-        # saves the agent into a dir check erl_config.py 83
 
         self.from_env_step_is = env.step_is
         return agent
@@ -417,10 +266,7 @@ def run(save_path, agent_list, log_rules=False):
     args.soft_update_tau = 2e-6
     args.learning_rate = 2e-6
     args.batch_size = 512
-    # args.batch_size = 2
-    args.break_step = int(32e4)
-    # args.break_step = int(32e3)
-    # args.break_step = int(1)
+    args.break_step = int(32)  # TODO reset to 32e4
     args.buffer_size = int(max_step * 32)
     args.repeat_times = 2
     args.horizon_len = int(max_step * 4)
@@ -439,12 +285,11 @@ def run(save_path, agent_list, log_rules=False):
         args,
     )
     ensemble_env.ensemble_train()
-    ensemble_env.multi_trade()
 
 
 if __name__ == "__main__":
 
     run(
-        "exps/one_each_double_tie",
+        "ensemble_teamname",
         [AgentD3QN, AgentDoubleDQN, AgentDoubleDQN, AgentTwinD3QN],
     )
