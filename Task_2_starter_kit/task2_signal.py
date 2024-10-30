@@ -9,14 +9,14 @@ You can improve the sentiment analysis here or generate your own signal.
 import re
 import torch
 
-SAMPLE_PROMPT = """Task: Analyze the following news headline about a stock and provide a sentiment score between -10 and 10, where:
-- -10 means very negative sentiment
-- -3 means neutral negative sentiment
+SAMPLE_PROMPT = """Task: Analyze the following news headline about a stock and provide a sentiment score between -{signal_strengh} and {signal_strengh}, where:
+- -{signal_strengh} means very negative sentiment
+- -{threshold} means neutral negative sentiment
 - 0 means neutral sentiment
-- 3 indicates neutral positive sentiment
-- 10 means very positive sentiment
+- {threshold} indicates neutral positive sentiment
+- {signal_strengh} means very positive sentiment
 
-Do not provide any explanations. Output only a single number in the range of -10 to 10 based on the sentiment of the news. 
+Do not provide any explanations. Output only a single number in the range of -{signal_strengh} to {signal_strengh} based on the sentiment of the news. 
 
 News headline: "{news}"
 
@@ -26,10 +26,10 @@ Generate only a single integer value for the sentiment score after the colon. Se
 """
 
 
-def _generate_signal(tokenizer, model, device, news, prices):
+def _generate_signal(tokenizer, model, device, news, prices, signal_strengh, threshold):
     """Using model forward pass to do backprop"""
-    prompt = SAMPLE_PROMPT.format(news=news, prices=prices)
-    inputs = tokenizer(prompt, return_tensors="pt")#.to(device)
+    prompt = SAMPLE_PROMPT.format(signal_strengh=signal_strengh, threshold=threshold, news=news, prices=prices)
+    inputs = tokenizer(prompt, return_tensors="pt")  # .to(device)
 
     generated_ids = inputs["input_ids"]
     log_probs = []
@@ -54,10 +54,25 @@ def _generate_signal(tokenizer, model, device, news, prices):
     output_string = tokenizer.decode(generated_ids[0], skip_special_tokens=True).strip()
 
     match = re.search(r"Sentiment score:\s*(-?\d+(?:\.\d+)?)", output_string)
-    sentiment_score = float(match.group(1)) if match else 0
+    signal_strengh = float(match.group(1)) if match else 0
 
-    return sentiment_score, total_log_prob
+    return signal_strengh, total_log_prob
 
 
-def generate_signal(tokenizer, model, device, news, prices):
-    return _generate_signal(tokenizer, model, device, news, prices)
+def _generate_eval_signal(tokenizer, model, device, news, prices, signal_strengh, threshold):
+    prompt = SAMPLE_PROMPT.format(signal_strengh=signal_strengh, threshold=threshold, news=news, prices=prices)
+
+    # using news signals, prompt model for a scaled sentiment scorea
+    input = tokenizer(prompt, return_tensors="pt").to(device)
+    outputs = model.generate(**input, max_new_tokens=5, pad_token_id=tokenizer.eos_token_id)
+    output_string = tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+    match = re.search(r"Sentiment score:\s*(-?\d+(?:\.\d+)?)", output_string)
+    return float(match.group(1)) if match else 0
+
+
+def generate_eval_signal(tokenizer, model, device, news, prices, signal_strengh, threshold):
+    return _generate_eval_signal(tokenizer, model, device, news, prices, signal_strengh, threshold)
+
+
+def generate_signal(tokenizer, model, device, news, prices, signal_strengh, threshold):
+    return _generate_signal(tokenizer, model, device, news, prices, signal_strengh, threshold)

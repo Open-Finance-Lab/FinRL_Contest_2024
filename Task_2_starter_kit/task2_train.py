@@ -11,8 +11,11 @@ from peft import get_peft_model, LoraConfig, TaskType
 from task2_stocks import get_stock_data
 from task2_news import get_news
 from task2_signal import generate_signal
+from task2_config import Task2Config
 
-max_train_steps = 50
+from task2_config import Task2Config
+
+
 # Date ranges for the starter solution
 END_DATE = "2023-12-16"
 START_DATE = "2020-01-01"
@@ -27,6 +30,17 @@ STOCK_TICKERS_HIGHEST_CAP_US = [
     "XOM",
     "WMT",
 ]
+
+train_config = Task2Config(
+    model_name="meta-llama/Llama-3.2-3B-Instruct",
+    bnb_config=BitsAndBytesConfig(load_in_8bit=True),
+    tickers=STOCK_TICKERS_HIGHEST_CAP_US,
+    end_date=END_DATE,
+    start_date=START_DATE,
+    lookahead=3,
+    signal_strengh=10,
+    max_train_steps=50,
+)
 
 
 """load data and make dset - first we load in the ticker data for each ticker, then we enrich that with news data"""
@@ -51,11 +65,10 @@ max_memory = {i: "22GiB" for i in range(num_gpus)}
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # map to auto for multi gpu
-model_name = "meta-llama/Llama-3.2-3B-Instruct"
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(train_config.model_name)
 model = AutoModelForCausalLM.from_pretrained(
-    model_name,
+    train_config.model_name,
     quantization_config=bnb_config_4,
     # quantization_config=bnb_config_4,
     device_map="auto",
@@ -104,7 +117,9 @@ losses = []
 optimizer = Adam(model.parameters(), lr=1e-5)
 
 # you can also set this to true or while not horizon len met
-for step in tqdm(range(max_train_steps), desc=f"training for max train steps: {max_train_steps}"):
+for step in tqdm(
+    range(train_config.max_train_steps), desc=f"training for max train steps: {train_config.max_train_steps}"
+):
     date, prices = state
     date = pd.Timestamp(date)
     ticker_actions = {}
@@ -125,6 +140,8 @@ for step in tqdm(range(max_train_steps), desc=f"training for max train steps: {m
             device,
             news,
             prices.copy().drop("future_close", axis=1)[prices["Ticker"] == t],
+            train_config.signal_strengh,
+            train_config.threshold,
         )
         ticker_actions[t] = sentiment_score
         log_probs.append(log_prob)
