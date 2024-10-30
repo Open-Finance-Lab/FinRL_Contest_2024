@@ -63,7 +63,13 @@ The basic requirement is that your model should be able to interact with the env
 4. To encourage innovation, if you want to add new mechanisms or use the unused settings (e.g. short sell, different voting mechanisms for the ensemble) in the environment, please also submit your environment, ensure it works with your agent for evaluation, and describe the new changes in the readme.
 
 ## Evaluation Template
-We provide an evaluation template
+We provide an evaluation template that you may use to test your ensemble models. You may change `"predict_ary_path": "BTC_1sec_predict.npy"` in the env_args object to point to a validation subset of the predict ary path which will let you test your model on out of sample data. 
+
+The evaluation kit is in `task1_eval.py` and loads your models then uses a simple voting scheme to perform ensemble actions. As mentioned above, if you change the voting scheme, please be sure to submit your environment code. You may change following:
+- `_ensemble_action` you may substitute this for another ensemble action function. Please submit your action functions so that we may use them to evaluate your models.
+- `save_path`: this is the path of your saved models for the ensemble saved in the task1_train file. 
+- `dataset_path`: please provide a path to a validation dataset. We recommend using a subset of `BTC_1sec_predict.npy` for validation.
+- `args.net_dims`: we use a default setting of (128,128,128) but you may choose to use different models. Please provide your settings so that we can evaluate them properly.
 
 ## Evaluation and Submission guidelines
 The initial cash is $1 million.
@@ -76,7 +82,7 @@ Please provide a readme that describes your submission and explains important th
 ├── finrl-contest-task-2 
 │ ├── trained_models # Your trained component agent weights.
 │ ├── task1_ensemble.py # File for implementing the ensemble method 
-│ ├── task1_test.py # File to load your model and test the ensemble method
+│ ├── task1_eval.py # a template evaluation file. Please submit your evaluation code as well.
 │ ├── trade_simulator.py # File for the environment. Please submit it if you modified the provided env.
 │ ├── READE.md # File to explain the your code
 │ ├── requirements.txt # Have it if adding any new packages
