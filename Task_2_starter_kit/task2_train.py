@@ -8,13 +8,9 @@ from tqdm import tqdm
 from torch.optim import Adam
 from peft import get_peft_model, LoraConfig, TaskType
 
-from task2_stocks import get_stock_data
 from task2_news import get_news
 from task2_signal import generate_signal
 from task2_config import Task2Config
-
-from task2_config import Task2Config
-
 
 # Date ranges for the starter solution
 END_DATE = "2023-12-16"
@@ -38,13 +34,12 @@ train_config = Task2Config(
     end_date=END_DATE,
     start_date=START_DATE,
     lookahead=3,
-    signal_strengh=10,
+    signal_strength=10,
     max_train_steps=50,
 )
 
 
 """load data and make dset - first we load in the ticker data for each ticker, then we enrich that with news data"""
-# stock_data = get_stock_data(STOCK_TICKERS_HIGHEST_CAP_US, START_DATE, END_DATE)
 stock_data = pd.read_csv("task2_stocks.csv")
 
 """load model and env"""
@@ -140,7 +135,7 @@ for step in tqdm(
             device,
             news,
             prices.copy().drop("future_close", axis=1)[prices["Ticker"] == t],
-            train_config.signal_strengh,
+            train_config.signal_strength,
             train_config.threshold,
         )
         ticker_actions[t] = sentiment_score
