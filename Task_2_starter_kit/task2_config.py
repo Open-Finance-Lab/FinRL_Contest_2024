@@ -42,8 +42,8 @@ class Task2Config:
             model_name (str): The name of the model to be used.
             bnb_config (dict): Configuration for Bayesian optimization (or other relevant purpose).
             tickers (list of str): List of stock tickers to analyze.
-            end_date (str, optional): The end date for the data range (YYYY-MM-DD). Defaults to "".
-            start_date (str, optional): The start date for the data range (YYYY-MM-DD). Defaults to "".
+            end_date (str): The end date for the data range (YYYY-MM-DD).
+            start_date (str): The start date for the data range (YYYY-MM-DD).
             lookahead (int, optional): Number of days to look ahead for predictions. Defaults to 3.
             signal_strength (int, optional): The strength of the signal for generating predictions. Defaults to 10.
             num_short (int, optional): Number of short positions to consider. Defaults to 3.

@@ -8,7 +8,6 @@ from tqdm import tqdm
 from torch.optim import Adam
 from peft import get_peft_model, LoraConfig, TaskType
 
-from task2_stocks import get_stock_data
 from task2_news import get_news
 from task2_signal import generate_signal
 from task2_config import Task2Config
@@ -41,7 +40,6 @@ train_config = Task2Config(
 
 
 """load data and make dset - first we load in the ticker data for each ticker, then we enrich that with news data"""
-# stock_data = get_stock_data(STOCK_TICKERS_HIGHEST_CAP_US, START_DATE, END_DATE)
 stock_data = pd.read_csv("task2_stocks.csv")
 
 """load model and env"""
