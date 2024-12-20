@@ -1,22 +1,55 @@
 import pandas as pd
 
-
 class Task2Config:
-    """configuration class"""
+    """
+    Configuration class for Task 2.
+
+    This class encapsulates configuration parameters, including model details,
+    market tickers, date ranges, and training settings.
+
+    Attributes:
+        model_name (str): The name of the model to be used.
+        bnb_config (dict): Configuration for Bayesian optimization (or other relevant purpose).
+        tickers (list of str): List of stock tickers to analyze.
+        end_date (str): The end date for the data range (YYYY-MM-DD).
+        start_date (str): The start date for the data range (YYYY-MM-DD).
+        eval_dates (pd.DatetimeIndex): Business days within the date range.
+        lookahead (int): Number of days to look ahead for predictions.
+        signal_strength (int): The strength of the signal for generating predictions.
+        threshold (int): Threshold for signal filtering (30% of signal strength).
+        num_short (int): Number of short positions to consider.
+        num_long (int): Number of long positions to consider.
+        max_train_steps (int): Maximum number of training steps for the model.
+    """
 
     def __init__(
         self,
-        model_name,
-        bnb_config,
-        tickers,
-        end_date="",
-        start_date="",
-        lookahead=3,
-        signal_strengh=10,
-        num_short=3,
-        num_long=3,
-        max_train_steps=50
+        model_name: str,
+        bnb_config: dict,
+        tickers: list,
+        end_date: str = "",
+        start_date: str = "",
+        lookahead: int = 3,
+        signal_strength: int = 10,
+        num_short: int = 3,
+        num_long: int = 3,
+        max_train_steps: int = 50
     ):
+        """
+        Initialize the Task2Config class.
+
+        Args:
+            model_name (str): The name of the model to be used.
+            bnb_config (dict): Configuration for Bayesian optimization (or other relevant purpose).
+            tickers (list of str): List of stock tickers to analyze.
+            end_date (str, optional): The end date for the data range (YYYY-MM-DD). Defaults to "".
+            start_date (str, optional): The start date for the data range (YYYY-MM-DD). Defaults to "".
+            lookahead (int, optional): Number of days to look ahead for predictions. Defaults to 3.
+            signal_strength (int, optional): The strength of the signal for generating predictions. Defaults to 10.
+            num_short (int, optional): Number of short positions to consider. Defaults to 3.
+            num_long (int, optional): Number of long positions to consider. Defaults to 3.
+            max_train_steps (int, optional): Maximum number of training steps for the model. Defaults to 50.
+        """
         self.model_name = model_name
         self.bnb_config = bnb_config
         self.tickers = tickers
@@ -24,8 +57,8 @@ class Task2Config:
         self.start_date = start_date
         self.eval_dates = pd.bdate_range(start=start_date, end=end_date)  # Only market open days
         self.lookahead = lookahead
-        self.signal_strengh = signal_strengh
-        self.threshold = signal_strengh // 3  # 30% as a threshold
+        self.signal_strength = signal_strength
+        self.threshold = signal_strength // 3  # 30% as a threshold
         self.num_short = num_short
         self.num_long = num_long
         self.max_train_steps = max_train_steps

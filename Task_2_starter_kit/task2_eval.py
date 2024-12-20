@@ -34,7 +34,7 @@ eval_config = Task2Config(
     end_date=END_DATE,
     start_date=START_DATE,
     lookahead=3,
-    signal_strengh=10,
+    signal_strength=10,
     num_short=3,
     num_long=3,
 )
@@ -93,7 +93,7 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
             device,
             news,
             prices.copy().drop("future_close", axis=1)[prices["Ticker"] == ticker],
-            eval_config.signal_strengh,
+            eval_config.signal_strength,
             eval_config.threshold,
         )
 
