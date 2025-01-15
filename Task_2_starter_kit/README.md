@@ -38,6 +38,30 @@ parameters you may set freely:
 - signals: we provide a sample signal generation function. As with the training, you are free to provide your own signal generation function
 - `train steps`: you may change the number of training steps that your model does. We set this to 50 in the demo kit, but we recommend setting it to at least the length of your training data.
 
+## Setup Instructions
+
+To get started, follow these steps:
+
+1. **Create a Virtual Environment** (optional but recommended):
+   It's highly recommended to set up a virtual environment to avoid conflicts with other packages. You can do this using `virtualenv`:
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
+
+2. **Install Dependencies**:
+   Once the virtual environment is set up, install the required packages by running:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Ensure Access to Model**:
+   Make sure you have access to the desired model on Hugging Face (e.g., Llama or your preferred model). You may need to log in to your Hugging Face account and accept terms if necessary. 
+
+   Then, you should be able to load the model as specified in the code.
+
 ## Evaluation Template
 You may use this template to evaluate your models in a framework aligned to how we will be evaluating your submissions. We provide some hyperparameters and configuration settings to demonstrate how to use the template. The template uses a config class to localize configurations for your convenience. You may create a validation set from the training data and use that with the evaluation class to test your model on out of sample data. 
 

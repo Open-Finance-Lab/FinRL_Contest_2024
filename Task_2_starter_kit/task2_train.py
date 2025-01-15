@@ -128,7 +128,7 @@ def plot_training_metrics(losses, rewards, returns, running_eval):
     plt.savefig("training.png")
 
 
-def main():
+def train():
     """Main training loop."""
     # Initialize training configuration
     train_config = Task2Config(
@@ -143,7 +143,7 @@ def main():
     )
 
     # Load data
-    stock_data = pd.read_csv("task2_stocks_test.csv")
+    stock_data = pd.read_csv("task2_dsets/test/task2_stocks_test.csv")
 
     # Setup model and environment
     device, tokenizer, model = setup_and_initialize_model(train_config)
@@ -184,7 +184,7 @@ def main():
                 t,
                 (date - timedelta(days=1))._date_repr,
                 (date - timedelta(days=11))._date_repr,
-                "task2_news_test.csv",
+                "task2_dsets/test/task2_news_test.csv",
             )
             sentiment_score, log_prob = generate_signal(
                 tokenizer,
@@ -224,7 +224,3 @@ def main():
 
     # Plot results
     plot_training_metrics(losses, rewards, returns, running_eval)
-
-
-### WHEN TO RUN MAIN
-main()

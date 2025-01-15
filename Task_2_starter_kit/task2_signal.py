@@ -48,6 +48,16 @@ def _generate_signal(tokenizer, model, device, news, prices, signal_strength, th
         next_token_logits = logits[:, -1, :]
         next_token_probs = torch.softmax(next_token_logits, dim=-1)
 
+        # Replace NaN, Inf, or negative values with 0
+        next_token_probs = torch.where(
+            torch.isnan(next_token_probs) | torch.isinf(next_token_probs) | (next_token_probs < 0),
+            torch.zeros_like(next_token_probs),
+            next_token_probs
+        )
+
+        # Normalize the probabilities to ensure valid sampling
+        next_token_probs = next_token_probs / next_token_probs.sum(dim=-1, keepdim=True)
+
         next_token_id = torch.multinomial(next_token_probs, num_samples=1)
 
         token_log_prob = torch.log(next_token_probs[0, next_token_id[0, 0]])
