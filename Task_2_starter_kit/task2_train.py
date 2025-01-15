@@ -14,8 +14,8 @@ from task2_signal import generate_signal
 
 
 # Constants
-END_DATE = "2023-12-16"
-START_DATE = "2020-01-01"
+END_DATE = "2022-10-31"
+START_DATE = "2022-10-10"
 
 STOCK_TICKERS_HIGHEST_CAP_US = [
     "AAPL",
@@ -28,12 +28,16 @@ STOCK_TICKERS_HIGHEST_CAP_US = [
 ]
 
 
-def setup_model_config():
-    """Setup model configurations for training.
+def setup_and_initialize_model(config):
+    """Setup model configurations and initialize the model and tokenizer.
+    
+    Args:
+        config: Training configuration object.
     
     Returns:
-        Tuple of (bnb_config_4bit, bnb_config_8bit, device).
+        Tuple of (bnb_config_4bit, bnb_config_8bit, device, tokenizer, model).
     """
+    # Setup Bits and Bytes Configurations
     bnb_config_4 = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
@@ -43,21 +47,10 @@ def setup_model_config():
 
     bnb_config_8 = BitsAndBytesConfig(load_in_8bit=True)
     
+    # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    return bnb_config_4, bnb_config_8, device
-
-
-def initialize_model(config, device):
-    """Initialize and configure the model and tokenizer.
-    
-    Args:
-        config: Training configuration object.
-        device: torch device to use.
-    
-    Returns:
-        Tuple of (tokenizer, model).
-    """
+    # Initialize Tokenizer and Model
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
     model = AutoModelForCausalLM.from_pretrained(
         config.model_name,
@@ -84,7 +77,8 @@ def initialize_model(config, device):
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
     
-    return tokenizer, model
+    return device, tokenizer, model
+
 
 
 def plot_training_metrics(losses, rewards, returns, running_eval):
@@ -149,11 +143,10 @@ def main():
     )
 
     # Load data
-    stock_data = pd.read_csv("task2_stocks.csv")
+    stock_data = pd.read_csv("task2_stocks_test.csv")
 
     # Setup model and environment
-    bnb_config_4, bnb_config_8, device = setup_model_config()
-    tokenizer, model = initialize_model(train_config, device)
+    device, tokenizer, model = setup_and_initialize_model(train_config)
 
     task2env = Task2Env(
         model,
@@ -191,7 +184,7 @@ def main():
                 t,
                 (date - timedelta(days=1))._date_repr,
                 (date - timedelta(days=11))._date_repr,
-                "task2_news.csv",
+                "task2_news_test.csv",
             )
             sentiment_score, log_prob = generate_signal(
                 tokenizer,
@@ -227,8 +220,11 @@ def main():
         if done:
             break
 
+    model.save_pretrained("path_to_save_model")
+
     # Plot results
     plot_training_metrics(losses, rewards, returns, running_eval)
 
 
 ### WHEN TO RUN MAIN
+main()
