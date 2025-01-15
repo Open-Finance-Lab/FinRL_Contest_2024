@@ -1,4 +1,4 @@
-# FinRL task 2
+# FinRL Task 2
 
 This task aims to develop LLMs that can generate and engineer effective signals from news by using Reinforcement Learning from Market Feedback (RLMF).
 
@@ -8,12 +8,13 @@ The LLM should be loadable with huggingface and do inference on 20GB GPU.
 
 The quality of the trading signals will be evaluated with a fixed time exit strategy that can either hold, long or short a given stock.  
 
-
 ## Datasets
 
 `task2_dataset.zip` contains:
-- `task2_stocks.csv`: an OHLCV dataset of a list of stocks.
-- `task2_news.csv`: a corresponding news dataset for the list of stocks.
+- A 70-30 data split into a test and train directory
+- Each split has: 
+    - `task2_stocks_{split}.csv`: an OHLCV dataset of a list of stocks.
+    - `task2_news_{split}.csv`: a corresponding news dataset for the list of stocks.
 
 Contestants are free to use external datasets to deveop RLMF methods and fine-tune the LLMs. The evaluation phase will use the testing datasets with the same fields as the dataset provided. 
 
@@ -21,20 +22,19 @@ Contestants are free to use external datasets to deveop RLMF methods and fine-tu
 We use the sentiment score as an example in our starter kit. You can improve on this sentiment analysis or generate your own signal. 
 
 The starter kit includes:
-- `task2_dataset.zip`
+- `task2_dsets.zip`
 - `task2_env.py`: an example of environment to utilize RLMF. It defines the state and action space for the LLM agent to explore. This environment generates reward signals based on the stock price movement (market feedback) and sentiment score (LLM output). You are free to make changes or write your own environment.
 - `task2_news.py`: it contains the function to read the news dataset.
-- `task2_stocks.py`: it contains the function to dowload the OHLCV dataset from yfinance.
 - `task2_signal.py`: it contains the prompt and code to use the LLM to generate sentiment score. In this file you may change the prompt to generate various other signals. For example you can change the range of sentiment scores as long as the thresholds are set to 30% of the maximum and minimum value. (We will evaluate using these thresholds so please do not use other values)
-- `task2_train.py`: it imports a model and tokenizer. It calls helper functions from the other task2_ files to fetch stock tickers, fetch appropriate news to tickers, use the environment in order to fine-tune the LLM.
+- `task2_train.py`: it imports a model and tokenizer. It calls helper functions from the other task2 files to fetch stock tickers, fetch appropriate news to tickers, use the environment in order to fine-tune the LLM.
 - `task2_eval.py`: we provide a sample evaluation file that shows how you can evaluate your model using a simple strategy.
 - `task2_config.py`: We provide a configuration class that is used for both training and evaluation. Both the train and evaluation file use this class. Not all parameters need to be used in training or evaluation, and we describe their uses in detail in the enxt section.
 
 parameters you may set freely:
 - `END_DATE`: you may set your own training ranges. 
 - `START_DATE`
-- `signal_strengh` You can set a custom signal range for your model to learn to estimate.
-- datasets: you may partition the stock and news datasets into validation datasets. Using the full training dataset before training might help you understand the baseline performance of your model
+- `signal_strength` You can set a custom signal range for your model to learn to estimate.
+- datasets: you may train the model on additional datasets using RLMF, eval set will use a larger hidden testing set similar to the split given
 - signals: we provide a sample signal generation function. As with the training, you are free to provide your own signal generation function
 - `train steps`: you may change the number of training steps that your model does. We set this to 50 in the demo kit, but we recommend setting it to at least the length of your training data.
 
@@ -46,13 +46,6 @@ Your model will generate a signal for each ticker each timestep which will be us
 The evaluation kit includes:
 - `task2_eval.py`: this file contains a configuration class, code to generate signals and evaluate the model performance and code to log model performance
 - model loader: we show how to use huggingface to load models 
-
-parameters you may set freely:
-- `END_DATE`: for your own evaluation. It should be after the start date, see training template
-- `START_DATE`
-- `config.signal_strengh`
-- datasets: you may partition the stock and news datasets into validation datasets. Using the full training dataset before training might help you understand the baseline performance of your model
-- signals: we provide a sample signal generation function. As with the training, you are free to provide your own signal generation function
 
 ### Evaluation strategy
 The evaluation strategy opens a long and short position on the 3 stocks with the strongest positive and negative signals respectively in the following pattern: 
@@ -76,4 +69,3 @@ Please provide a readme that describes your submission and explains important th
 │ ├── requirements.txt # Have it if adding any new packages
 │ ├── And any additional scripts you create
 ```
-
