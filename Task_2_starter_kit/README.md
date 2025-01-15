@@ -10,7 +10,7 @@ The quality of the trading signals will be evaluated with a fixed time exit stra
 
 ## Datasets
 
-`task2_dataset.zip` contains:
+`task2_dsets.zip` contains:
 - A 70-30 data split into a test and train directory
 - Each split has: 
     - `task2_stocks_{split}.csv`: an OHLCV dataset of a list of stocks.
