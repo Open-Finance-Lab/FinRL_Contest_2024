@@ -198,7 +198,7 @@ def main():
                 model,
                 device,
                 news,
-                prices.copy().drop("future_close", axis=1)[prices["Ticker"] == t],
+                prices.copy().drop("Future_Close", axis=1)[prices["Ticker"] == t],
                 train_config.signal_strength,
                 train_config.threshold,
             )

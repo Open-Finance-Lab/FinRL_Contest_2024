@@ -60,9 +60,9 @@ class Task2Env(gym.Env):
         self.max_episode_steps = max_steps
 
         # Process stock_data by ticker to build state
-        stock_data["future_close"] = stock_data.groupby("Ticker")["Close"].shift(
+        stock_data["Future_Close"] = stock_data.groupby("Ticker")["Close"].shift(
             -lookahead)
-        stock_data = stock_data.dropna(subset=["future_close"])
+        stock_data = stock_data.dropna(subset=["Future_Close"])
         self.stock_data = stock_data
 
         self.date_groups = []
@@ -179,7 +179,7 @@ class Task2Env(gym.Env):
         for ticker in prices.Ticker:
             sentiment_score = actions[ticker]
             c_price = prices.loc[prices["Ticker"] == ticker, "Close"].values[0]
-            f_price = prices.loc[prices["Ticker"] == ticker, "future_close"].values[0]
+            f_price = prices.loc[prices["Ticker"] == ticker, "Future_Close"].values[0]
 
             value_change = (f_price - c_price) / c_price
 
@@ -253,7 +253,7 @@ class Task2Env(gym.Env):
             sentiment_score = actions[ticker]
 
             c_price = prices.loc[prices["Ticker"] == ticker, "Close"].values[0]
-            f_price = prices.loc[prices["Ticker"] == ticker, "future_close"].values[0]
+            f_price = prices.loc[prices["Ticker"] == ticker, "Future_Close"].values[0]
 
             if sentiment_score >= self.threshold:
                 # Long position

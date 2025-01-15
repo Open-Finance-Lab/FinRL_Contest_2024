@@ -86,7 +86,7 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
             model,
             device,
             news,
-            prices.copy().drop("future_close", axis=1)[prices["Ticker"] == ticker],
+            prices.copy().drop("Future_Close", axis=1)[prices["Ticker"] == ticker],
             eval_config.signal_strength,
             eval_config.threshold,
         )
@@ -95,7 +95,7 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
 
         # Get today's close price and the future close price for the ticker
         close_price = prices.loc[prices["Ticker"] == ticker, "Close"].item()
-        future_price = prices.loc[prices["Ticker"] == ticker, "future_close"].item()
+        future_price = prices.loc[prices["Ticker"] == ticker, "Future_Close"].item()
 
         # Threshold-Based Trading (For Model Behavior Analysis)
         # Using generated signal to initiate a trade
@@ -134,7 +134,7 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
     # Process selected tickers for trading
     for ticker, signal_score in long_tickers + short_tickers:
         close_price = prices.loc[prices["Ticker"] == ticker, "Close"].item()
-        future_price = prices.loc[prices["Ticker"] == ticker, "future_close"].item()
+        future_price = prices.loc[prices["Ticker"] == ticker, "Future_Close"].item()
 
         # Calculate value change based on long or short position
         if ticker in dict(long_tickers):
