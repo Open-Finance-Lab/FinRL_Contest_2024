@@ -1,8 +1,8 @@
 import pandas as pd
 
+
 class Task2Config:
-    """
-    Configuration class for Task 2.
+    """Configuration class for Task 2.
 
     This class encapsulates configuration parameters, including model details,
     market tickers, date ranges, and training settings.
@@ -35,30 +35,33 @@ class Task2Config:
         num_long: int = 3,
         max_train_steps: int = 50
     ):
-        """
-        Initialize the Task2Config class.
+        """Initialize the Task2Config class.
 
         Args:
-            model_name (str): The name of the model to be used.
-            bnb_config (dict): Configuration for Bayesian optimization (or other relevant purpose).
-            tickers (list of str): List of stock tickers to analyze.
-            end_date (str): The end date for the data range (YYYY-MM-DD).
-            start_date (str): The start date for the data range (YYYY-MM-DD).
-            lookahead (int, optional): Number of days to look ahead for predictions. Defaults to 3.
-            signal_strength (int, optional): The strength of the signal for generating predictions. Defaults to 10.
-            num_short (int, optional): Number of short positions to consider. Defaults to 3.
-            num_long (int, optional): Number of long positions to consider. Defaults to 3.
-            max_train_steps (int, optional): Maximum number of training steps for the model. Defaults to 50.
+            model_name: The name of the model to be used.
+            bnb_config: Configuration for Bayesian optimization (or other relevant purpose).
+            tickers: List of stock tickers to analyze.
+            end_date: The end date for the data range (YYYY-MM-DD).
+            start_date: The start date for the data range (YYYY-MM-DD).
+            lookahead: Number of days to look ahead for predictions. Defaults to 3.
+            signal_strength: The strength of the signal for generating predictions.
+                Defaults to 10.
+            num_short: Number of short positions to consider. Defaults to 3.
+            num_long: Number of long positions to consider. Defaults to 3.
+            max_train_steps: Maximum number of training steps for the model.
+                Defaults to 50.
         """
         self.model_name = model_name
         self.bnb_config = bnb_config
         self.tickers = tickers
         self.end_date = end_date
         self.start_date = start_date
-        self.eval_dates = pd.bdate_range(start=start_date, end=end_date)  # Only market open days
+        # Only market open days
+        self.eval_dates = pd.bdate_range(start=start_date, end=end_date)
         self.lookahead = lookahead
         self.signal_strength = signal_strength
-        self.threshold = signal_strength // 3  # 30% as a threshold
+        # 30% as a threshold
+        self.threshold = signal_strength // 3
         self.num_short = num_short
         self.num_long = num_long
         self.max_train_steps = max_train_steps

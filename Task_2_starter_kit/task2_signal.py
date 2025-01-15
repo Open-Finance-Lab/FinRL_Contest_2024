@@ -1,13 +1,6 @@
-"""
-You may modify the signal generation pipeline as you wish.
-
-We use an LLM to generate a sentiment score according to the prompt below. 
-
-You can improve the sentiment analysis here or generate your own signal.
-"""
-
 import re
 import torch
+
 
 SAMPLE_PROMPT = """Task: Analyze the following news headline about a stock and provide a sentiment score between -{signal_strength} and {signal_strength}, where:
 - -{signal_strength} means very negative sentiment
@@ -25,9 +18,9 @@ Price Data: "{prices}"
 Generate only a single integer value for the sentiment score after the colon. Sentiment score:
 """
 
-def _generate_signal(tokenizer, model, device, news, prices, signal_strength, threshold) -> (float, float): # type: ignore
-    """
-    Generate a sentiment signal using the provided model and tokenizer.
+
+def _generate_signal(tokenizer, model, device, news, prices, signal_strength, threshold) -> (float, float):  # type: ignore
+    """Generate a sentiment signal using the provided model and tokenizer.
 
     Args:
         tokenizer: Pre-trained tokenizer.
@@ -70,9 +63,9 @@ def _generate_signal(tokenizer, model, device, news, prices, signal_strength, th
 
     return sentiment_score, total_log_prob
 
+
 def _generate_eval_signal(tokenizer, model, device, news, prices, signal_strength, threshold) -> float:
-    """
-    Generate sentiment signal specifically for evaluation.
+    """Generate sentiment signal specifically for evaluation.
 
     Args:
         tokenizer: Pre-trained tokenizer.
@@ -96,9 +89,9 @@ def _generate_eval_signal(tokenizer, model, device, news, prices, signal_strengt
 
     return sentiment_score
 
+
 def generate_eval_signal(tokenizer, model, device, news, prices, signal_strength, threshold) -> float:
-    """
-    Public-facing function to generate sentiment scores for evaluation.
+    """Public-facing function to generate sentiment scores for evaluation.
 
     Args:
         tokenizer: Pre-trained tokenizer.
@@ -114,9 +107,9 @@ def generate_eval_signal(tokenizer, model, device, news, prices, signal_strength
     """
     return _generate_eval_signal(tokenizer, model, device, news, prices, signal_strength, threshold)
 
+
 def generate_signal(tokenizer, model, device, news, prices, signal_strength, threshold) -> float:
-    """
-    Public-facing function to generate sentiment scores using the model.
+    """Public-facing function to generate sentiment scores using the model.
 
     Args:
         tokenizer: Pre-trained tokenizer.

@@ -1,22 +1,22 @@
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from transformers import BitsAndBytesConfig
 from datetime import datetime, timedelta
+from peft import LoraConfig, TaskType, get_peft_model
+from torch.optim import Adam
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pandas as pd
-from tqdm import tqdm
-from torch.optim import Adam
-from peft import get_peft_model, LoraConfig, TaskType
+import torch
 
+from task2_config import Task2Config
+from task2_env import Task2Env
 from task2_news import get_news
 from task2_signal import generate_signal
-from task2_config import Task2Config
 
-# Date ranges for the starter solution
+
+# Constants
 END_DATE = "2023-12-16"
 START_DATE = "2020-01-01"
 
-"""a very simple env whost state space is only the data"""
 STOCK_TICKERS_HIGHEST_CAP_US = [
     "AAPL",
     "NVDA",
@@ -27,175 +27,208 @@ STOCK_TICKERS_HIGHEST_CAP_US = [
     "WMT",
 ]
 
-train_config = Task2Config(
-    model_name="meta-llama/Llama-3.2-3B-Instruct",
-    bnb_config=BitsAndBytesConfig(load_in_8bit=True),
-    tickers=STOCK_TICKERS_HIGHEST_CAP_US,
-    end_date=END_DATE,
-    start_date=START_DATE,
-    lookahead=3,
-    signal_strength=10,
-    max_train_steps=50,
-)
+
+def setup_model_config():
+    """Setup model configurations for training.
+    
+    Returns:
+        Tuple of (bnb_config_4bit, bnb_config_8bit, device).
+    """
+    bnb_config_4 = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=False,
+        bnb_4bit_quant_type="fp4",
+    )
+
+    bnb_config_8 = BitsAndBytesConfig(load_in_8bit=True)
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    return bnb_config_4, bnb_config_8, device
 
 
-"""load data and make dset - first we load in the ticker data for each ticker, then we enrich that with news data"""
-stock_data = pd.read_csv("task2_stocks.csv")
+def initialize_model(config, device):
+    """Initialize and configure the model and tokenizer.
+    
+    Args:
+        config: Training configuration object.
+        device: torch device to use.
+    
+    Returns:
+        Tuple of (tokenizer, model).
+    """
+    tokenizer = AutoTokenizer.from_pretrained(config.model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        config.model_name,
+        quantization_config=bnb_config_4,
+        device_map="auto",
+    )
 
-"""load model and env"""
-from task2_env import Task2Env
+    # Configure model settings
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()
+    model.config.use_cache = False
 
-bnb_config_4 = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.bfloat16,  # or torch.bfloat16
-    bnb_4bit_use_double_quant=False,
-    bnb_4bit_quant_type="fp4",  # 'nf4' or 'fp4'
-)
+    # Setup LoRA configuration
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        inference_mode=False,
+        r=30,
+        target_modules=["q_proj", "v_proj"],
+        lora_alpha=16,
+        lora_dropout=0.1,
+        bias="none",
+    )
 
-bnb_config_8 = BitsAndBytesConfig(load_in_8bit=True)
-
-
-num_gpus = torch.cuda.device_count()
-max_memory = {i: "22GiB" for i in range(num_gpus)}
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # map to auto for multi gpu
-
-tokenizer = AutoTokenizer.from_pretrained(train_config.model_name)
-model = AutoModelForCausalLM.from_pretrained(
-    train_config.model_name,
-    quantization_config=bnb_config_4,
-    # quantization_config=bnb_config_4,
-    device_map="auto",
-    # max_memory=max_memory,
-)
-# model = torch.nn.DataParallel(model)
-# model.to(device)
-
-# grad checkpntg
-model.gradient_checkpointing_enable()
-model.enable_input_require_grads()
-model.config.use_cache = False
-
-# LoRA config to run on smaller gpus
-lora_config = LoraConfig(
-    task_type=TaskType.CAUSAL_LM,
-    inference_mode=False,
-    r=30,
-    target_modules=["q_proj", "v_proj"],
-    lora_alpha=16,
-    lora_dropout=0.1,
-    bias="none",
-)
-
-model = get_peft_model(model, lora_config)
-model.print_trainable_parameters()
-
-task2env = Task2Env(
-    model,
-    tokenizer,
-    STOCK_TICKERS_HIGHEST_CAP_US,
-    stock_data,
-    (-2, 2),
-    max_steps=252 - 4,
-    lookahead=14,
-)
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+    
+    return tokenizer, model
 
 
-state = task2env.reset()
-actions = []
-rewards = []
-returns = []
-running_eval = []
-losses = []
+def plot_training_metrics(losses, rewards, returns, running_eval):
+    """Plot and save training metrics.
+    
+    Args:
+        losses: List of training losses.
+        rewards: List of rewards.
+        returns: List of returns.
+        running_eval: List of running evaluation values.
+    """
+    plt.figure(figsize=(14, 10))
 
-optimizer = Adam(model.parameters(), lr=1e-5)
+    # Plot Loss over Time
+    plt.subplot(2, 2, 1)
+    plt.plot(losses, label="Loss", color="red")
+    plt.title("Loss over Time")
+    plt.xlabel("Training Step")
+    plt.ylabel("Loss")
+    plt.legend()
 
-# you can also set this to true or while not horizon len met
-for step in tqdm(
-    range(train_config.max_train_steps), desc=f"training for max train steps: {train_config.max_train_steps}"
-):
-    date, prices = state
-    date = pd.Timestamp(date)
-    ticker_actions = {}
-    log_probs = []
-    rewards_list = []
-    done = False
+    # Plot Reward over Time
+    plt.subplot(2, 2, 2)
+    plt.plot(rewards, label="Reward", color="blue")
+    plt.title("Reward over Time")
+    plt.xlabel("Training Step")
+    plt.ylabel("Reward")
+    plt.legend()
 
-    for t in prices.Ticker:
-        news = get_news(
-            t,
-            (date - timedelta(days=1))._date_repr,
-            (date - timedelta(days=11))._date_repr,
-            "task2_news.csv",
-        )
-        sentiment_score, log_prob = generate_signal(
-            tokenizer,
-            model,
-            device,
-            news,
-            prices.copy().drop("future_close", axis=1)[prices["Ticker"] == t],
-            train_config.signal_strength,
-            train_config.threshold,
-        )
-        ticker_actions[t] = sentiment_score
-        log_probs.append(log_prob)
+    # Plot Average Price Change over Time
+    plt.subplot(2, 2, 3)
+    plt.plot(returns, label="Average Price Change", color="green")
+    plt.title("Average Price Change over Time")
+    plt.xlabel("Training Step")
+    plt.ylabel("Average Price Change")
+    plt.legend()
 
-    """actions may look like: {'AAPL': 1.0, 'NVDA': 1.5, 'GOOG': 0, 'AMZN': 1.5, 'MSFT': -1.5, 'XOM': 0.5, 'WMT': 1.5}"""
-    state, reward, done, d = task2env.step(ticker_actions)
-    actions.append(ticker_actions)
-    rewards.append(reward)
-    returns.append(d["price change"])
-    running_eval.append(d["running eval"])
-    rewards_list.append(reward)
+    # Plot Running Evaluation Amount over Time
+    plt.subplot(2, 2, 4)
+    plt.plot(running_eval, label="Running Evaluation Amount", color="purple")
+    plt.title("Running Evaluation Amount over Time")
+    plt.xlabel("Training Step")
+    plt.ylabel("Evaluation Amount")
+    plt.legend()
 
-    loss = -torch.stack(log_probs) * torch.tensor(reward)
-    loss = loss.mean()
-
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-    losses.append(loss.item())
-
-    if done:
-        break
+    plt.tight_layout()
+    plt.savefig("training.png")
 
 
-# Create subplots
-plt.figure(figsize=(14, 10))
+def main():
+    """Main training loop."""
+    # Initialize training configuration
+    train_config = Task2Config(
+        model_name="meta-llama/Llama-3.2-3B-Instruct",
+        bnb_config=BitsAndBytesConfig(load_in_8bit=True),
+        tickers=STOCK_TICKERS_HIGHEST_CAP_US,
+        end_date=END_DATE,
+        start_date=START_DATE,
+        lookahead=3,
+        signal_strength=10,
+        max_train_steps=50,
+    )
 
-# Plot Loss over Time
-plt.subplot(2, 2, 1)
-plt.plot(losses, label="Loss", color="red")
-plt.title("Loss over Time")
-plt.xlabel("Training Step")
-plt.ylabel("Loss")
-plt.legend()
+    # Load data
+    stock_data = pd.read_csv("task2_stocks.csv")
 
-# Plot Reward over Time
-plt.subplot(2, 2, 2)
-plt.plot(rewards, label="Reward", color="blue")
-plt.title("Reward over Time")
-plt.xlabel("Training Step")
-plt.ylabel("Reward")
-plt.legend()
+    # Setup model and environment
+    bnb_config_4, bnb_config_8, device = setup_model_config()
+    tokenizer, model = initialize_model(train_config, device)
 
-# Plot Average Price Change over Time
-plt.subplot(2, 2, 3)
-plt.plot(returns, label="Average Price Change", color="green")
-plt.title("Average Price Change over Time")
-plt.xlabel("Training Step")
-plt.ylabel("Average Price Change")
-plt.legend()
+    task2env = Task2Env(
+        model,
+        tokenizer,
+        STOCK_TICKERS_HIGHEST_CAP_US,
+        stock_data,
+        (-2, 2),
+        max_steps=252 - 4,
+        lookahead=14,
+    )
 
-# Plot Running Evaluation Amount over Time
-plt.subplot(2, 2, 4)
-plt.plot(running_eval, label="Running Evaluation Amount", color="purple")
-plt.title("Running Evaluation Amount over Time")
-plt.xlabel("Training Step")
-plt.ylabel("Evaluation Amount")
-plt.legend()
+    # Initialize training metrics
+    state = task2env.reset()
+    actions = []
+    rewards = []
+    returns = []
+    running_eval = []
+    losses = []
 
-plt.tight_layout()
-plt.savefig("training.png")
+    optimizer = Adam(model.parameters(), lr=1e-5)
+
+    # Training loop
+    for step in tqdm(
+        range(train_config.max_train_steps),
+        desc=f"training for max train steps: {train_config.max_train_steps}"
+    ):
+        date, prices = state
+        date = pd.Timestamp(date)
+        ticker_actions = {}
+        log_probs = []
+        rewards_list = []
+        
+        for t in prices.Ticker:
+            news = get_news(
+                t,
+                (date - timedelta(days=1))._date_repr,
+                (date - timedelta(days=11))._date_repr,
+                "task2_news.csv",
+            )
+            sentiment_score, log_prob = generate_signal(
+                tokenizer,
+                model,
+                device,
+                news,
+                prices.copy().drop("future_close", axis=1)[prices["Ticker"] == t],
+                train_config.signal_strength,
+                train_config.threshold,
+            )
+            ticker_actions[t] = sentiment_score
+            log_probs.append(log_prob)
+
+        state, reward, done, d = task2env.step(ticker_actions)
+        
+        # Update metrics
+        actions.append(ticker_actions)
+        rewards.append(reward)
+        returns.append(d["price change"])
+        running_eval.append(d["running eval"])
+        rewards_list.append(reward)
+
+        # Compute and apply gradients
+        loss = -torch.stack(log_probs) * torch.tensor(reward)
+        loss = loss.mean()
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        losses.append(loss.item())
+
+        if done:
+            break
+
+    # Plot results
+    plot_training_metrics(losses, rewards, returns, running_eval)
+
+
+### WHEN TO RUN MAIN

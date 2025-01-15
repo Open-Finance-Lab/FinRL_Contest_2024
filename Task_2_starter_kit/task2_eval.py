@@ -11,25 +11,23 @@ from task2_news import get_news
 from task2_signal import generate_eval_signal
 from task2_config import Task2Config
 
-### GLOBAL VARS ###
-
+# Global Variables
 START_DATE = None
 END_DATE = None
 
 MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 
 STOCK_TICKERS_HIGHEST_CAP_US = [
-    "AAPL", 
-    "NVDA", 
-    "GOOG", 
-    "AMZN", 
-    "MSFT", 
-    "XOM",  
-    "WMT"
+    "AAPL",
+    "NVDA",
+    "GOOG",
+    "AMZN",
+    "MSFT",
+    "XOM",
+    "WMT",
 ]
 
-### CONFIG INIT ###
-
+# Config Initialization
 eval_config = Task2Config(
     model_name=MODEL,
     bnb_config=BitsAndBytesConfig(load_in_8bit=True),  # Enable 8-bit quantization for efficient memory usage
@@ -47,24 +45,22 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",  # Automatically allocate model across available devices
 )
 
-### EVAL INIT ###
-
+# Evaluation Initialization
 # Initialize lists to track trade outcomes and daily returns
 trade_win_loss = []  # 1 for win, 0 for loss
 daily_returns = []
 
 # Load data
-stock_data = pd.read_csv("task2_dsets/test/task2_test_stocks.csv")
+stock_data = pd.read_csv("task2_dsets/test/task2_stocks_test.csv")
 
-# This DataFrame logs cumulative returns based on a threshold trading strategy
-# Note: It is used for tracking model behavior, not for formal evaluation.
+# DataFrame for logging cumulative returns based on a threshold trading strategy
+# Note: Used for tracking model behavior, not for formal evaluation.
 logging_cum_returns_df_threshold_based = []
 
 # Track cumulative returns from the evaluation strategy
 eval_cum_returns_data = []
 
-### EVALUATION ###
-
+# Evaluation Loop
 for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
     # Filter stock data for the current date
     prices = stock_data[stock_data["Date"] == date._date_repr]
@@ -79,9 +75,9 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
     for ticker in eval_config.tickers:
         news = get_news(
             ticker,
-            (date - timedelta(days=1))._date_repr,  # Get news from the previous day to prevent post market close data leakage
+            (date - timedelta(days=1))._date_repr,  # Get news from the previous day to prevent post-market close data leakage
             (date - timedelta(days=11))._date_repr,
-            "task2_dsets/test/task2_test/news.csv"  # News file
+            "task2_dsets/test/task2_news_test.csv"  # News file
         )
 
         # Generate evaluation signal using the model
@@ -101,9 +97,8 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
         close_price = prices.loc[prices["Ticker"] == ticker, "Close"].item()
         future_price = prices.loc[prices["Ticker"] == ticker, "future_close"].item()
 
-        ### THRESHOLD-BASED TRADING (FOR MODEL BEHAVIOR ANALYSIS) ###
-
-        # Using generated signal initiate a trade
+        # Threshold-Based Trading (For Model Behavior Analysis)
+        # Using generated signal to initiate a trade
         if signal_score >= eval_config.threshold:
             # Long position: Buy at today's close price, sell at future close price
             value_change = (future_price - close_price) / close_price
@@ -121,8 +116,7 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
             "ValueChange": value_change,
         })
 
-    ### EVALUATION STRATEGY ###
-
+    # Evaluation Strategy
     # Sort tickers based on signal scores in descending order
     sorted_tickers = sorted(ticker_signals.items(), key=lambda x: x[1], reverse=True)
 
@@ -159,16 +153,14 @@ for date in tqdm(eval_config.eval_dates, desc="Evaluating..."):
         "win_loss": value_change >= 0,  # True if the trade was profitable
     })
 
-
-### LOGGING - FOR YOUR INFORMATION, YOU MAY CHANGE THIS SECTION TO ADD ADDITIONAL LOGGING ###
-
+# Logging (For Information)
 # Create DataFrames
 logging_cum_returns_df_threshold_based = pd.DataFrame(logging_cum_returns_df_threshold_based)
 logging_cum_returns_df_threshold_based["CumulativeReturn"] = logging_cum_returns_df_threshold_based.groupby("Ticker")[
     "ValueChange"
 ].cumsum()
 
-# calculate cumulative returns and win loss
+# Calculate cumulative returns and win/loss
 eval_cum_returns_df = pd.DataFrame(eval_cum_returns_data)
 eval_cum_returns_df["cumulative_return"] = (1 + eval_cum_returns_df["MeanEvalReturn"]).cumprod() - 1
 win_rate = eval_cum_returns_df["win_loss"].mean()  # Mean gives the proportion of wins
